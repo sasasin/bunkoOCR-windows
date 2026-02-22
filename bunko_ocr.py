@@ -256,6 +256,88 @@ def postprocess(input_file: str, json_path: Path, ruby_cfg: dict[str, str]) -> N
 
 
 # ---------------------------------------------------------------------------
+# 環境チェック（--doctor）
+# ---------------------------------------------------------------------------
+
+def run_doctor(engine_dir: Path, config_dir: Path) -> int:
+    """
+    動作に必要なファイルの存在を確認し、結果を stdout に表示する。
+    必須ファイルがすべて揃っていれば 0、不足があれば 1 を返す。
+    """
+    # (filename, required, note)
+    engine_files: list[tuple[str, bool, str]] = [
+        ("OCRengine.exe",          True,  ""),
+        ("textline_detect.exe",    True,  ""),
+        ("detectGPU.exe",          False, "任意: DirectML の GPU 自動検出に使用"),
+        ("TextDetector.onnx",      False, "TextDetector.quant.onnx との either/or"),
+        ("TextDetector.quant.onnx",False, "任意: TextDetector.onnx の量子化版（代替）"),
+        ("CodeDecoder.onnx",       True,  ""),
+        ("TransformerEncoder.onnx",True,  ""),
+        ("TransformerDecoder.onnx",True,  ""),
+    ]
+    config_files: list[tuple[str, bool, str]] = [
+        ("param.config", False, "任意: なければデフォルト値を使用"),
+        ("ruby.config",  False, "任意: なければデフォルト値を使用"),
+        ("path.config",  False, "任意: なければデフォルト値を使用"),
+    ]
+
+    print("[doctor] 環境チェック")
+    missing_required = 0
+
+    # --- engine-dir ---
+    print(f"\nengine-dir: {engine_dir}")
+    td_onnx   = (engine_dir / "TextDetector.onnx").exists()
+    td_quant  = (engine_dir / "TextDetector.quant.onnx").exists()
+
+    for filename, required, note in engine_files:
+        exists = (engine_dir / filename).exists()
+
+        # TextDetector 系は either/or で必須判定
+        if filename == "TextDetector.onnx":
+            is_missing_required = (not td_onnx and not td_quant)
+        elif filename == "TextDetector.quant.onnx":
+            is_missing_required = False  # こちら側では必須扱いしない
+        else:
+            is_missing_required = required and not exists
+
+        if exists:
+            tag = "[OK]     "
+        elif required or (filename == "TextDetector.onnx" and not td_quant):
+            tag = "[MISSING]"
+        else:
+            tag = "[--]     "
+
+        suffix = f"  ({note})" if note else ""
+        print(f"  {tag} {filename}{suffix}")
+
+        if is_missing_required:
+            missing_required += 1
+
+    # TextDetector: 両方なければ1件のエラーとして集計（上のループ内で計上済み）
+
+    # --- config-dir ---
+    same_dir = engine_dir.resolve() == config_dir.resolve()
+    label = f"config-dir: {config_dir}" + ("  (engine-dir と同じ)" if same_dir else "")
+    print(f"\n{label}")
+    for filename, required, note in config_files:
+        exists = (config_dir / filename).exists()
+        tag = "[OK]     " if exists else "[--]     "
+        suffix = f"  ({note})" if note else ""
+        print(f"  {tag} {filename}{suffix}")
+        if required and not exists:
+            missing_required += 1
+
+    # --- 結果サマリ ---
+    print()
+    if missing_required == 0:
+        print("結果: OK (必須ファイルはすべて揃っています)")
+        return 0
+    else:
+        print(f"結果: NG (必須ファイルが {missing_required} 件不足しています)")
+        return 1
+
+
+# ---------------------------------------------------------------------------
 # stdout 読み込みスレッド
 # ---------------------------------------------------------------------------
 
