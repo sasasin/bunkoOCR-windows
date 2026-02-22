@@ -4,15 +4,8 @@ findtextCenterNet https://github.com/lithium0003/findtextCenterNet で公開し�
 新しめのGPUがあると、非常に高速に実行できます。 
 
 ## Compile
-### 必要なもの (onnxruntime)
-- python
-- cmake
-- openvino https://storage.openvinotoolkit.org/repositories/openvino/packages/2025.0/windows/openvino_toolkit_windows_2025.0.0.17942.1f68be9f594_x86_64.zip
-- CUDA Toolkit 12.8 https://developer.download.nvidia.com/compute/cuda/12.8.1/network_installers/cuda_12.8.1_windows_network.exe
-- cuDNN https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.8.0.87_cuda12-archive.zip
-- TensorRT https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/10.9.0/zip/TensorRT-10.9.0.34.Windows.win10.cuda-12.8.zip
 
-インストールした場所に合わせて、make_onnx.batのパスを適宜修正してから、実行する。
+詳細は [HOW_TO_BUILD.md](HOW_TO_BUILD.md) を参照してください。
 
 ## Run
 実行時には、DLLが必要となります。
