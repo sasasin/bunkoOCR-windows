@@ -522,9 +522,9 @@ def main() -> int:
     )
     parser.add_argument(
         "images",
-        nargs="+",
+        nargs="*",
         metavar="IMAGE",
-        help="処理する画像ファイル",
+        help="処理する画像ファイル（--doctor 使用時は不要）",
     )
     parser.add_argument(
         "--engine-dir",
@@ -554,12 +554,23 @@ def main() -> int:
         action="store_true",
         help="OCRengine の出力を stderr に表示する",
     )
+    parser.add_argument(
+        "--doctor",
+        action="store_true",
+        help="動作に必要なファイルの存在を確認して結果を表示する",
+    )
 
     args = parser.parse_args()
 
     script_dir = Path(__file__).parent
     engine_dir = Path(args.engine_dir) if args.engine_dir else script_dir
     config_dir = Path(args.config_dir) if args.config_dir else engine_dir
+
+    if args.doctor:
+        return run_doctor(engine_dir, config_dir)
+
+    if not args.images:
+        parser.error("処理する IMAGE を1つ以上指定してください（または --doctor で環境チェック）")
 
     # path.config から output_dir / override を読み込み、CLI 引数で上書き
     path_cfg = load_path_config(config_dir)
